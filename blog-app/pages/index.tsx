@@ -108,6 +108,11 @@ interface Post {
 	attributes: {
 		title: string;
 		content: string;
+		user: {
+			data: {
+				attributes: { username: string; email: string };
+			};
+		};
 	};
 }
 
@@ -121,6 +126,7 @@ const Home: NextPage = () => {
 
 	useEffect(() => {
 		if (data) {
+			console.log(data);
 			const {
 				posts: {
 					meta: {
@@ -166,10 +172,23 @@ const Home: NextPage = () => {
 
 			{/* Multiple data is retrieved (either get all or using the strapi filters api) */}
 			{data.posts.data.map((post: Post) => {
+				const {
+					attributes: {
+						user: { data },
+					},
+				} = post;
 				return (
 					<div key={post.id} style={{ backgroundColor: "#b5b5b5", padding: "8px", margin: "8px", width: "400px" }}>
 						<p>{post.attributes.title}</p>
 						<p>{post.attributes.content}</p>
+						{data ? (
+							<>
+								<p>Created by {data.attributes.username}</p>
+								<p>Email: {data.attributes.email}</p>
+							</>
+						) : (
+							<></>
+						)}
 					</div>
 				);
 			})}
