@@ -1,14 +1,31 @@
 import type { NextPage } from "next";
 import { useQuery, gql, useMutation } from "@apollo/client";
+import { useEffect, useState } from "react";
 
 const POSTS = gql`
-	query GetPosts {
-		posts {
+	query GetPosts($page: Int, $pageSize: Int) {
+		posts(pagination: { page: $page, pageSize: $pageSize }) {
 			data {
 				id
 				attributes {
 					title
 					content
+					user {
+						data {
+							id
+							attributes {
+								username
+								email
+							}
+						}
+					}
+				}
+			}
+			meta {
+				pagination {
+					page
+					pageSize
+					pageCount
 				}
 			}
 		}
@@ -95,7 +112,25 @@ interface Post {
 }
 
 const Home: NextPage = () => {
-	const { loading, error, data, refetch } = useQuery(POSTS);
+	const [page, setPage] = useState(1);
+	const [pageCount, setPageCount] = useState(0);
+
+	const { loading, error, data, refetch } = useQuery(POSTS, {
+		variables: { page, pageSize: 10 },
+	});
+
+	useEffect(() => {
+		if (data) {
+			const {
+				posts: {
+					meta: {
+						pagination: { pageCount: pc },
+					},
+				},
+			} = data;
+			setPageCount(pc);
+		}
+	}, [data]);
 
 	const [createPost] = useMutation(CREATE_POST_MUTATION);
 	const [updatePost] = useMutation(UPDATE_POST_MUTATION);
@@ -139,9 +174,29 @@ const Home: NextPage = () => {
 				);
 			})}
 
-			<button onClick={addPost}>Add Post</button>
+			{/* <button onClick={addPost}>Add Post</button>
 			<button onClick={editPost}>Edit Post</button>
-			<button onClick={removePost}>Remove Post</button>
+			<button onClick={removePost}>Remove Post</button> */}
+			<button
+				onClick={() => {
+					if (page === 1) {
+						return;
+					}
+					setPage(page - 1);
+				}}
+			>
+				Previous Post
+			</button>
+			<button
+				onClick={() => {
+					if (page === pageCount) {
+						return;
+					}
+					setPage(page + 1);
+				}}
+			>
+				Next Post
+			</button>
 		</div>
 	);
 };
