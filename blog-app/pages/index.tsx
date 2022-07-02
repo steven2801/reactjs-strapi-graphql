@@ -120,13 +120,44 @@ const Home: NextPage = () => {
 	const [page, setPage] = useState(1);
 	const [pageCount, setPageCount] = useState(0);
 
-	const { loading, error, data, refetch } = useQuery(POSTS, {
-		variables: { page, pageSize: 10 },
+	const { loading, error, data, refetch, fetchMore } = useQuery(POSTS, {
+		variables: { page: 1, pageSize: 10 },
+		pollInterval: 500,
 	});
 
 	useEffect(() => {
+		if (page === 1) return;
+		fetchMore({
+			variables: { page: page, pageSize: 10 },
+			updateQuery: (prev, { fetchMoreResult }) => {
+				if (!fetchMoreResult) {
+					return prev;
+				}
+				let currentPosts = {
+					posts: {
+						...prev.posts,
+						data: [...prev.posts.data, ...fetchMoreResult.posts.data],
+					},
+				};
+
+				return currentPosts;
+			},
+		});
+	}, [page]);
+
+	useEffect(() => {
+		const fetchInterval = setInterval(() => {
+			setPage((page) => {
+				if (page >= pageCount) clearInterval(fetchInterval);
+				return page + 1;
+			});
+		}, 3000);
+
+		return () => clearInterval(fetchInterval);
+	}, [pageCount]);
+
+	useEffect(() => {
 		if (data) {
-			console.log(data);
 			const {
 				posts: {
 					meta: {
@@ -196,7 +227,7 @@ const Home: NextPage = () => {
 			{/* <button onClick={addPost}>Add Post</button>
 			<button onClick={editPost}>Edit Post</button>
 			<button onClick={removePost}>Remove Post</button> */}
-			<button
+			{/* <button
 				onClick={() => {
 					if (page === 1) {
 						return;
@@ -215,7 +246,7 @@ const Home: NextPage = () => {
 				}}
 			>
 				Next Post
-			</button>
+			</button> */}
 		</div>
 	);
 };
